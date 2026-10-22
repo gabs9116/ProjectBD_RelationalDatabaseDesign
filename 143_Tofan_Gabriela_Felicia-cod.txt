@@ -1,0 +1,98 @@
+-- ============================ EX. 14 ===========================
+-- ============== CREEAREA UNEI VIZUALIZARI COMPLEXE =============
+
+CREATE OR REPLACE VIEW V_VALOARE_INCHIRIERE AS
+SELECT i.id_inchiriere,
+    d.id_echipament,
+    d.stare_obiect,
+    d.pret_unitar,
+    (i.data_final - i.data_inceput) AS numar_zile,
+    NVL(r.procent, 0) AS procent_reducere,
+    (d.pret_unitar * (i.data_final - i.data_inceput)) * (1 - NVL(r.procent, 0) / 100) AS pret_final_calculat
+FROM inchiriere i
+JOIN detalii d ON i.id_inchiriere = d.id_inchiriere
+LEFT JOIN reducere r ON i.id_reducere = r.id_reducere;
+
+-- ======================= OP. LMD PERMISA =======================
+
+UPDATE V_VALOARE_INCHIRIERE
+SET stare_obiect = 'uzat'
+WHERE id_inchiriere = 1 AND id_echipament = 1;
+
+-- ====================== OP. LMD NEPERMISA ======================
+
+UPDATE V_VALOARE_INCHIRIERE
+SET pret_final_calculat = 100.00
+WHERE id_inchiriere = 1 AND id_echipament = 1;
+
+
+-- ============================ EX. 15 ===========================
+-- ========================== CEREREA 1 ==========================
+
+SELECT 
+    c.nume AS nume_client, 
+    c.prenume AS prenume_client, 
+    NVL(a.tip_abonament, 'Fara Abonament') AS tip_abonament,
+    i.id_inchiriere, 
+    p.id_plata
+FROM client c
+LEFT OUTER JOIN abonament a ON c.id_client = a.id_client
+LEFT OUTER JOIN inchiriere i ON c.id_client = i.id_client   
+LEFT OUTER JOIN plata p ON i.id_inchiriere = p.id_inchiriere
+ORDER BY c.nume ASC;
+
+-- ========================== CEREREA 2 ==========================
+
+SELECT 
+    f.id_furnizor, 
+    f.nume_furnizor
+FROM furnizor f
+WHERE NOT EXISTS (
+    SELECT e.id_echipament
+    FROM echipament e
+    WHERE e.id_furnizor = f.id_furnizor
+    AND NOT EXISTS (
+        SELECT d.id_echipament
+        FROM detalii d
+        WHERE d.id_echipament = e.id_echipament
+    )
+);
+
+-- ========================== CEREREA 3 ==========================
+
+SELECT 
+    ranking.id_echipament, 
+    ranking.denumire, 
+    ranking.pret_zi
+FROM (
+    SELECT id_echipament, denumire, pret_zi
+    FROM echipament
+    ORDER BY pret_zi DESC
+) ranking
+WHERE ROWNUM <= 3;
+
+-- ============================ EX. 16 ============================
+-- ===================== ANTERIOR OPTIMIZARI ======================
+
+SELECT e.denumire, l.adresa, ft.detalii_uzura
+FROM echipament e
+JOIN locatie l ON e.id_locatie = l.id_locatie
+JOIN fisa_tehnica ft ON e.id_echipament = ft.id_echipament
+WHERE e.id_categorie = 4;
+
+-- ===================== ULTERIOR OPTIMIZARI ======================
+
+SELECT 
+    e_filtrat.denumire, 
+    l.adresa, 
+    ft.detalii_uzura
+FROM (
+    SELECT 
+        id_echipament, 
+        denumire, 
+        id_locatie
+    FROM echipament
+    WHERE id_categorie = 4
+) e_filtrat
+JOIN locatie l ON e_filtrat.id_locatie = l.id_locatie
+JOIN fisa_tehnica ft ON e_filtrat.id_echipament = ft.id_echipament;

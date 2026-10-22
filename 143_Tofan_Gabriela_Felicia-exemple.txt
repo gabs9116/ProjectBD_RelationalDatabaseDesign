@@ -1,0 +1,129 @@
+- ============================ EX. 12 ============================
+-- ========================== CEREREA 1 ===========================
+
+SELECT UPPER(e.denumire) AS nume_echipament,
+    d.pret_unitar,
+    d.stare_obiect
+FROM detalii d
+JOIN echipament e ON d.id_echipament = e.id_echipament
+WHERE d.pret_unitar > (
+    SELECT AVG(d2.pret_unitar)
+    FROM detalii d2
+    JOIN echipament e2 ON d2.id_echipament = e2.id_echipament
+    JOIN categorie c2 ON e2.id_categorie = c2.id_categorie
+    WHERE e2.id_categorie = e.id_categorie
+)
+ORDER BY d.pret_unitar DESC;
+
+-- ========================== CEREREA 2 ===========================
+
+SELECT c.id_client,
+    c.nume,
+    c.prenume,
+    NVL(p_totale.total_platit, 0) AS total_achitat
+FROM client c
+LEFT JOIN (
+    SELECT i.id_client, SUM(p.suma_plata) AS total_platit
+    FROM inchiriere i
+    JOIN plata p ON i.id_inchiriere = p.id_inchiriere
+    GROUP BY i.id_client
+) p_totale ON c.id_client = p_totale.id_client
+ORDER BY total_achitat DESC;
+
+-- ========================== CEREREA 3 ===========================
+
+SELECT a.id_angajat,
+    INITCAP(a.nume || ' ' || a.prenume) AS nume_angajat,
+    COUNT(i.id_inchiriere) AS total_contracte
+FROM angajat a
+JOIN inchiriere i ON a.id_angajat = i.id_angajat_preluare
+GROUP BY a.id_angajat, a.nume, a.prenume
+HAVING COUNT(i.id_inchiriere) >= (
+    SELECT AVG(COUNT(id_inchiriere))
+    FROM inchiriere
+    GROUP BY id_angajat_preluare
+)
+ORDER BY total_contracte DESC;
+
+-- ========================== CEREREA 4 ===========================
+
+SELECT id_inchiriere,
+       NVL(TO_CHAR(id_angajat_returnare), 'Nereturnat') AS stadiu_retur,
+       DECODE(id_reducere, NULL, 'Pret Standard', 1, 'Campanie Black Friday', 'Reducere Aplicata') AS tip_pret,
+       CASE 
+            WHEN id_angajat_returnare IS NOT NULL THEN 'Arhivat'
+            WHEN id_angajat_returnare IS NULL AND data_final < SYSDATE THEN '! URGENT - TERMEN DEPASIT !'
+            ELSE 'Activ - In Termen'
+       END AS alerta_status
+FROM inchiriere
+ORDER BY data_inceput ASC;
+
+-- ========================== CEREREA 5 ===========================
+
+WITH date_abonamente AS (
+    SELECT ab.id_abonament,
+           INITCAP(LOWER(c.nume)) AS nume_client,
+           ab.tip_abonament,
+           ROUND(MONTHS_BETWEEN(SYSDATE, ab.data_creare), 1) AS luni_vechime
+    FROM abonament ab
+    JOIN client c ON ab.id_client = c.id_client
+)
+SELECT id_abonament,
+       nume_client,
+       tip_abonament,
+       luni_vechime,
+       CASE 
+            WHEN luni_vechime > 6 THEN 'Membru Veteran'
+            ELSE 'Membru Nou'
+       END AS categorie_loialitate
+FROM date_abonamente
+ORDER BY luni_vechime DESC;
+
+-- ============================ EX. 13 ===========================
+-- ========================== Update 1 ============================
+
+UPDATE inchiriere
+SET id_reducere = 1
+WHERE id_client IN (
+    SELECT id_client 
+    FROM abonament 
+    WHERE tip_abonament = 'VIP'
+);
+
+COMMIT;
+
+-- verificare
+SELECT i.id_inchiriere, i.id_client, ab.tip_abonament, i.id_reducere
+FROM inchiriere i
+JOIN abonament ab ON i.id_client = ab.id_client
+WHERE ab.tip_abonament = 'VIP';
+
+-- ========================== Update 2 ============================
+
+UPDATE detalii
+SET stare_obiect = 'nou'
+WHERE id_echipament IN (
+    SELECT id_echipament 
+    FROM fisa_tehnica 
+    WHERE ultima_verificare > DATE '2026-05-01'
+);
+
+COMMIT;
+
+-- verificare
+SELECT d.id_inchiriere, d.id_echipament, f.ultima_verificare, d.stare_obiect
+FROM detalii d
+JOIN fisa_tehnica f ON d.id_echipament = f.id_echipament
+WHERE f.ultima_verificare > DATE '2026-05-01';
+
+-- ========================== Delete 1 ============================
+
+DELETE FROM plata
+WHERE id_inchiriere IN (
+    SELECT i.id_inchiriere 
+    FROM inchiriere i
+    JOIN angajat a ON i.id_angajat_preluare = a.id_angajat
+    WHERE a.rol = 'Manager'
+);
+
+COMMIT;

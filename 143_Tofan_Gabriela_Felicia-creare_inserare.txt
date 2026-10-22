@@ -1,0 +1,588 @@
+-- =========================== EX. 10 ===========================
+
+CREATE SEQUENCE seq_client START WITH 1 INCREMENT BY 1 NOMAXVALUE NOCACHE;
+CREATE SEQUENCE seq_angajat START WITH 1 INCREMENT BY 1 NOMAXVALUE NOCACHE;
+CREATE SEQUENCE seq_locatie START WITH 1 INCREMENT BY 1 NOMAXVALUE NOCACHE;
+CREATE SEQUENCE seq_reducere START WITH 1 INCREMENT BY 1 NOMAXVALUE NOCACHE;
+CREATE SEQUENCE seq_furnizor START WITH 1 INCREMENT BY 1 NOMAXVALUE NOCACHE;
+CREATE SEQUENCE seq_categorie START WITH 1 INCREMENT BY 1 NOMAXVALUE NOCACHE;
+CREATE SEQUENCE seq_abonament START WITH 1 INCREMENT BY 1 NOMAXVALUE NOCACHE;
+CREATE SEQUENCE seq_echipament START WITH 1 INCREMENT BY 1 NOMAXVALUE NOCACHE;
+CREATE SEQUENCE seq_inchiriere START WITH 1 INCREMENT BY 1 NOMAXVALUE NOCACHE;
+CREATE SEQUENCE seq_plata START WITH 1 INCREMENT BY 1 NOMAXVALUE NOCACHE;
+
+-- ================================== EX. 11 =================================
+-- ============================== CREARE TABELE ==============================
+-- =========================== TABELE INDEPENDENTE ===========================
+
+CREATE TABLE client (
+    id_client NUMBER(13) CONSTRAINT pk_client PRIMARY KEY,
+    nume VARCHAR2(50) NOT NULL,
+    prenume VARCHAR2(50) NOT NULL,
+    email VARCHAR2(50) CONSTRAINT uq_client_email UNIQUE,
+    telefon VARCHAR2(15) NOT NULL
+);
+
+CREATE TABLE angajat (
+    id_angajat NUMBER(13) CONSTRAINT pk_angajat PRIMARY KEY,
+    nume VARCHAR2(50) NOT NULL,
+    prenume VARCHAR2(50) NOT NULL,
+    rol VARCHAR2(30)
+);
+
+CREATE TABLE locatie (
+    id_locatie NUMBER(13) CONSTRAINT pk_locatie PRIMARY KEY,
+    nume VARCHAR2(50) NOT NULL,
+    adresa VARCHAR2(100)
+);
+
+CREATE TABLE reducere (
+    id_reducere NUMBER(13) CONSTRAINT pk_reducere PRIMARY KEY,
+    nume_campanie VARCHAR2(50) NOT NULL,
+    procent NUMBER(3) CONSTRAINT ck_reducere_procent CHECK (procent > 0 AND procent <= 100)
+);
+
+CREATE TABLE furnizor (
+    id_furnizor NUMBER(13) CONSTRAINT pk_furnizor PRIMARY KEY,
+    nume_furnizor VARCHAR2(50) NOT NULL,
+    telefon_contact VARCHAR2(15)
+);
+
+-- ============================ TABELE DEPENDENTE ============================
+
+CREATE TABLE categorie (
+    id_categorie NUMBER(13) CONSTRAINT pk_categorie PRIMARY KEY,
+    denumire VARCHAR2(50) NOT NULL,
+    id_categorie_parinte NUMBER(13) CONSTRAINT fk_categorie_parinte REFERENCES categorie(id_categorie)
+);
+
+CREATE TABLE abonament (
+    id_abonament NUMBER(13) CONSTRAINT pk_abonament PRIMARY KEY,
+    id_client NUMBER(13) NOT NULL,
+    tip_abonament VARCHAR2(30),
+    data_creare DATE DEFAULT SYSDATE NOT NULL,
+    data_expirare DATE,
+    CONSTRAINT fk_abonament_client FOREIGN KEY (id_client) REFERENCES client(id_client),
+    CONSTRAINT uq_abonament_client UNIQUE (id_client)
+);
+
+CREATE TABLE echipament (
+    id_echipament NUMBER(13) CONSTRAINT pk_echipament PRIMARY KEY,
+    denumire VARCHAR2(50) NOT NULL,
+    pret_zi NUMBER(5,2) NOT NULL,
+    id_categorie NUMBER(13) CONSTRAINT fk_echipament_categorie REFERENCES categorie(id_categorie),
+    id_locatie NUMBER(13) CONSTRAINT fk_echipament_locatie REFERENCES locatie(id_locatie),
+    id_furnizor NUMBER(13) CONSTRAINT fk_echipament_furnizor REFERENCES furnizor(id_furnizor),
+    CONSTRAINT ck_echipament_pret CHECK (pret_zi > 0)
+);
+
+CREATE TABLE inchiriere (
+    id_inchiriere NUMBER(13) CONSTRAINT pk_inchiriere PRIMARY KEY,
+    id_client NUMBER(13) CONSTRAINT fk_inchiriere_client REFERENCES client(id_client),
+    id_angajat_preluare NUMBER(13) NOT NULL,
+    id_angajat_returnare NUMBER(13),
+    id_reducere NUMBER(13),
+    data_inceput DATE NOT NULL,
+    data_final DATE NOT NULL,
+    CONSTRAINT fk_inchiriere_ang_preluare FOREIGN KEY (id_angajat_preluare) REFERENCES angajat(id_angajat),
+    CONSTRAINT fk_inchiriere_ang_returnare FOREIGN KEY (id_angajat_returnare) REFERENCES angajat(id_angajat),
+    CONSTRAINT fk_inchiriere_reducere FOREIGN KEY (id_reducere) REFERENCES reducere(id_reducere)
+);
+
+CREATE TABLE detalii (
+    id_inchiriere NUMBER(13),
+    id_echipament NUMBER(13),
+    id_angajat NUMBER(13),
+    pret_unitar NUMBER(7,2) NOT NULL,
+    stare_obiect VARCHAR2(50),
+    CONSTRAINT pk_detalii PRIMARY KEY (id_inchiriere, id_echipament),
+    CONSTRAINT fk_detalii_inchiriere FOREIGN KEY (id_inchiriere) REFERENCES inchiriere(id_inchiriere),
+    CONSTRAINT fk_detalii_echipament FOREIGN KEY (id_echipament) REFERENCES echipament(id_echipament),
+    CONSTRAINT fk_detalii_angajat FOREIGN KEY (id_angajat) REFERENCES angajat(id_angajat)
+);
+
+CREATE TABLE fisa_tehnica (
+    id_echipament NUMBER(13) CONSTRAINT pk_fisa_tehnica PRIMARY KEY,
+    ultima_verificare DATE,
+    detalii_uzura VARCHAR2(500),
+    CONSTRAINT fk_fisa_tehnica_echipament FOREIGN KEY (id_echipament) REFERENCES echipament(id_echipament)
+);
+
+CREATE TABLE plata (
+    id_plata NUMBER(13) CONSTRAINT pk_plata PRIMARY KEY,
+    id_inchiriere NUMBER(13) NOT NULL,
+    suma_plata NUMBER(7,2) NOT NULL,
+    data_plata DATE,
+    CONSTRAINT fk_plata_inchiriere FOREIGN KEY (id_inchiriere) REFERENCES inchiriere(id_inchiriere)
+);
+
+-- ============================ POPULARE TABEL CLIENT ============================
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Popa', 'Andrei', 'popa.andrei@email.com', '0718538567');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Popescu', 'Marcel', 'popescu.marcel97@email.com', '0721894667');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Radu', 'Mihaela', 'radumihaela11@email.com', '0795338567');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Ionescu', 'Gabriel', 'ionescu.gabriel.08@email.com', '0718538667');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Ionescu', 'Mihai', 'mihai.ion.12@email.com', '0718567867');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Stoica', 'Ana-Maria', 'ana.maria.45@email.com', '0792367567');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Rusu', 'Elena', 'rusuelena22@email.com', '0718532227');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Gheorghidiu', 'Mihail', 'mihail.g.87@email.com', '0718538654');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Constantin', 'Patricia', 'patricia.elena@email.com', '0714448567');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Popa', 'Trandafira', 'trandafira.popa.11@email.com', '0718596741');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Dumitru', 'Ionut', 'dumitru.ionut@email.com', '0722334455');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Stan', 'Andreea', 'stan.andreea99@email.com', '0733445566');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Gheorghe', 'Vasile', 'vasile.gh@email.com', '0744556677');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Marin', 'Cristina', 'marincristina@email.com', '0755667788');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Albu', 'Robert', 'albu.robert@email.com', '0766778899');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Negru', 'Simona', 'simona.negru@email.com', '0777889900');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Diaconu', 'Stefan', 'diaconu.stefan@email.com', '0721112233');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Chiriac', 'Laura', 'chiriac.laura@email.com', '0731112233');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Mihai', 'Alexandru', 'mihai.alex@email.com', '0741112233');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Dinu', 'Mihaela', 'dinu.mihaela@email.com', '0751112233');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Stancu', 'George', 'stancu.george@email.com', '0761112233');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Lupu', 'Raluca', 'lupu.raluca@email.com', '0771112233');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Vasile', 'Daniel', 'vasile.daniel@email.com', '0781112233');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Oprea', 'Alina', 'oprea.alina@email.com', '0791112233');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Nistor', 'Marius', 'nistor.marius@email.com', '0725556677');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Barbu', 'Diana', 'barbu.diana@email.com', '0735556677');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Luca', 'Florin', 'luca.florin@email.com', '0745556677');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Sandu', 'Ioana', 'sandu.ioana@email.com', '0755556677');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Coman', 'Adrian', 'coman.adrian@email.com', '0765556677');
+
+INSERT INTO client (id_client, nume, prenume, email, telefon) VALUES (seq_client.NEXTVAL, 'Avram', 'Monica', 'avram.monica@email.com', '0775556677');
+
+-- ============================ POPULARE TABEL ANGAJAT ============================
+
+-- [2] Manageri
+INSERT INTO angajat (id_angajat, nume, prenume, rol) 
+VALUES (seq_angajat.NEXTVAL, 'Tudor', 'Denis', 'Manager');
+
+INSERT INTO angajat (id_angajat, nume, prenume, rol) 
+VALUES (seq_angajat.NEXTVAL, 'Iancu', 'Teodora', 'Manager');
+
+-- [3] Tehnicieni
+INSERT INTO angajat (id_angajat, nume, prenume, rol) 
+VALUES (seq_angajat.NEXTVAL, 'Tudor', 'Antonio-Cosmin', 'Tehnician');
+
+INSERT INTO angajat (id_angajat, nume, prenume, rol) 
+VALUES (seq_angajat.NEXTVAL, 'Vasile', 'Cosmin', 'Tehnician');
+
+INSERT INTO angajat (id_angajat, nume, prenume, rol) 
+VALUES (seq_angajat.NEXTVAL, 'Manea', 'Florin', 'Tehnician');
+
+-- [10] Operatori
+INSERT INTO angajat (id_angajat, nume, prenume, rol) VALUES (seq_angajat.NEXTVAL, 'Marcu', 'Vasile', 'Operator');
+
+INSERT INTO angajat (id_angajat, nume, prenume, rol) VALUES (seq_angajat.NEXTVAL, 'Anton', 'Mariana', 'Operator');
+
+INSERT INTO angajat (id_angajat, nume, prenume, rol) VALUES (seq_angajat.NEXTVAL, 'Costin', 'Ion-Vasile', 'Operator');
+
+INSERT INTO angajat (id_angajat, nume, prenume, rol) VALUES (seq_angajat.NEXTVAL, 'Gabor', 'Andreea', 'Operator');
+
+INSERT INTO angajat (id_angajat, nume, prenume, rol) VALUES (seq_angajat.NEXTVAL, 'Enache', 'Marius', 'Operator');
+
+INSERT INTO angajat (id_angajat, nume, prenume, rol) VALUES (seq_angajat.NEXTVAL, 'Popescu', 'Constantina', 'Operator');
+
+INSERT INTO angajat (id_angajat, nume, prenume, rol) VALUES (seq_angajat.NEXTVAL, 'Vraicu', 'Rareș-Andrei', 'Operator');
+
+INSERT INTO angajat (id_angajat, nume, prenume, rol) VALUES (seq_angajat.NEXTVAL, 'Bujdei', 'Nicolas', 'Operator');
+
+INSERT INTO angajat (id_angajat, nume, prenume, rol) VALUES (seq_angajat.NEXTVAL, 'Preda', 'Liliana', 'Operator');
+
+INSERT INTO angajat (id_angajat, nume, prenume, rol) VALUES (seq_angajat.NEXTVAL, 'Nica', 'Bogdan', 'Operator');
+
+-- ============================ POPULARE TABEL LOCATIE ============================
+
+INSERT INTO locatie (id_locatie, nume, adresa) VALUES (seq_locatie.NEXTVAL, 'Centru Bucuresti', 'Str. Universitatii nr. 1, Bucuresti');
+
+INSERT INTO locatie (id_locatie, nume, adresa) VALUES (seq_locatie.NEXTVAL, 'Filiala Cluj', 'Calea Motilor nr. 15, Cluj-Napoca');
+
+INSERT INTO locatie (id_locatie, nume, adresa) VALUES (seq_locatie.NEXTVAL, 'Centru Brasov', 'Str. Republicii nr. 22, Brasov');
+
+INSERT INTO locatie (id_locatie, nume, adresa) VALUES (seq_locatie.NEXTVAL, 'Punct Timisoara', 'Piata Victoriei nr. 8, Timisoara');
+
+INSERT INTO locatie (id_locatie, nume, adresa) VALUES (seq_locatie.NEXTVAL, 'Filiala Iasi', 'Bd. Stefan cel Mare nr. 4, Iasi');
+
+INSERT INTO locatie (id_locatie, nume, adresa) VALUES (seq_locatie.NEXTVAL, 'Punct Constanta', 'Str. Falezei nr. 12, Constanta');
+
+INSERT INTO locatie (id_locatie, nume, adresa) VALUES (seq_locatie.NEXTVAL, 'Sucursala Sibiu', 'Str. Nicolae Balcescu nr. 5, Sibiu');
+
+INSERT INTO locatie (id_locatie, nume, adresa) VALUES (seq_locatie.NEXTVAL, 'Centru Sinaia', 'Bd. Carol I nr. 34, Sinaia');
+
+INSERT INTO locatie (id_locatie, nume, adresa) VALUES (seq_locatie.NEXTVAL, 'Punct Oradea', 'Str. Republicii nr. 10, Oradea');
+
+INSERT INTO locatie (id_locatie, nume, adresa) VALUES (seq_locatie.NEXTVAL, 'Filiala Craiova', 'Calea Bucuresti nr. 25, Craiova');
+
+-- ============================ POPULARE TABEL REDUCERE ============================
+
+INSERT INTO reducere (id_reducere, nume_campanie, procent) VALUES (seq_reducere.NEXTVAL, 'Black Friday Sport', 25);
+
+INSERT INTO reducere (id_reducere, nume_campanie, procent) VALUES (seq_reducere.NEXTVAL, 'Reducere de Weekend', 10);
+
+INSERT INTO reducere (id_reducere, nume_campanie, procent) VALUES (seq_reducere.NEXTVAL, 'Discount Elevi si Studenti', 15);
+
+INSERT INTO reducere (id_reducere, nume_campanie, procent) VALUES (seq_reducere.NEXTVAL, 'Reducere Happy Hour', 8);
+
+-- ============================ POPULARE TABEL FURNIZOR ============================
+
+INSERT INTO furnizor (id_furnizor, nume_furnizor, telefon_contact) VALUES (seq_furnizor.NEXTVAL, 'Decathlon Romania', '0214084400');
+
+INSERT INTO furnizor (id_furnizor, nume_furnizor, telefon_contact) VALUES (seq_furnizor.NEXTVAL, 'Hervis Sports', '0316856300');
+
+INSERT INTO furnizor (id_furnizor, nume_furnizor, telefon_contact) VALUES (seq_furnizor.NEXTVAL, 'Intersport', '0212353200');
+
+INSERT INTO furnizor (id_furnizor, nume_furnizor, telefon_contact) VALUES (seq_furnizor.NEXTVAL, 'Sportisimo', '0312225220');
+
+INSERT INTO furnizor (id_furnizor, nume_furnizor, telefon_contact) VALUES (seq_furnizor.NEXTVAL, 'Salomon Shop', '0728400888');
+
+INSERT INTO furnizor (id_furnizor, nume_furnizor, telefon_contact) VALUES (seq_furnizor.NEXTVAL, 'BikeXpert', '0213262536');
+
+INSERT INTO furnizor (id_furnizor, nume_furnizor, telefon_contact) VALUES (seq_furnizor.NEXTVAL, 'Maros Bike', '0264439475');
+
+-- ============================ POPULARE TABEL CATEGORIE ============================
+-- ============================== CATEGORII PRINCIPALE ==============================
+
+INSERT INTO categorie (id_categorie, denumire, id_categorie_parinte) VALUES (seq_categorie.NEXTVAL, 'Sporturi de Iarna', NULL);
+
+INSERT INTO categorie (id_categorie, denumire, id_categorie_parinte) VALUES (seq_categorie.NEXTVAL, 'Sporturi de Vara', NULL);
+
+INSERT INTO categorie (id_categorie, denumire, id_categorie_parinte) VALUES (seq_categorie.NEXTVAL, 'Echipament Protectie', NULL);
+
+-- =============================== SUBCATEGORII IARNA ===============================
+
+INSERT INTO categorie (id_categorie, denumire, id_categorie_parinte) VALUES (seq_categorie.NEXTVAL, 'Schiuri', 1);
+
+INSERT INTO categorie (id_categorie, denumire, id_categorie_parinte) VALUES (seq_categorie.NEXTVAL, 'Snowboarduri', 1);
+
+INSERT INTO categorie (id_categorie, denumire, id_categorie_parinte) VALUES (seq_categorie.NEXTVAL, 'Clapari Schi', 1);
+
+INSERT INTO categorie (id_categorie, denumire, id_categorie_parinte) VALUES (seq_categorie.NEXTVAL, 'Patinaj', 1);
+
+-- =============================== SUBCATEGORII VARA ================================
+
+INSERT INTO categorie (id_categorie, denumire, id_categorie_parinte) VALUES (seq_categorie.NEXTVAL, 'Biciclete Mountain Bike', 2);
+
+INSERT INTO categorie (id_categorie, denumire, id_categorie_parinte) VALUES (seq_categorie.NEXTVAL, 'Trotinete Electrice', 2);
+
+INSERT INTO categorie (id_categorie, denumire, id_categorie_parinte) VALUES (seq_categorie.NEXTVAL, 'Tenis de Camp', 2);
+
+INSERT INTO categorie (id_categorie, denumire, id_categorie_parinte) VALUES (seq_categorie.NEXTVAL, 'Sporturi de Echipa', 2);
+
+-- ============================= SUBCATEGORII PROTECTIE =============================
+
+INSERT INTO categorie (id_categorie, denumire, id_categorie_parinte) VALUES (seq_categorie.NEXTVAL, 'Casti Protectie', 3);
+
+INSERT INTO categorie (id_categorie, denumire, id_categorie_parinte) VALUES (seq_categorie.NEXTVAL, 'Ochelari Schi/Plaja', 3);
+
+INSERT INTO categorie (id_categorie, denumire, id_categorie_parinte) VALUES (seq_categorie.NEXTVAL, 'Genunchiere', 3);
+
+INSERT INTO categorie (id_categorie, denumire, id_categorie_parinte) VALUES (seq_categorie.NEXTVAL, 'Veste de Salvare', 3);
+
+
+-- ============================ POPULARE TABEL ABONAMENT ============================
+
+INSERT INTO abonament (id_abonament, id_client, tip_abonament, data_creare, data_expirare) VALUES (seq_abonament.NEXTVAL, 1, 'Standard', DATE '2026-05-01', ADD_MONTHS(DATE '2026-05-01', 1));
+
+INSERT INTO abonament (id_abonament, id_client, tip_abonament, data_creare, data_expirare) VALUES (seq_abonament.NEXTVAL, 2, 'Premium', DATE '2026-05-10', ADD_MONTHS(DATE '2026-05-10', 1));
+
+INSERT INTO abonament (id_abonament, id_client, tip_abonament, data_creare, data_expirare) VALUES (seq_abonament.NEXTVAL, 3, 'Standard', DATE '2026-03-01', ADD_MONTHS(DATE '2026-03-01', 3));
+
+INSERT INTO abonament (id_abonament, id_client, tip_abonament, data_creare, data_expirare) VALUES (seq_abonament.NEXTVAL, 4, 'VIP', DATE '2026-04-15', ADD_MONTHS(DATE '2026-04-15', 3));
+
+INSERT INTO abonament (id_abonament, id_client, tip_abonament, data_creare, data_expirare) VALUES (seq_abonament.NEXTVAL, 5, 'Premium', DATE '2025-12-01', ADD_MONTHS(DATE '2025-12-01', 6));
+
+INSERT INTO abonament (id_abonament, id_client, tip_abonament, data_creare, data_expirare) VALUES (seq_abonament.NEXTVAL, 6, 'Standard', DATE '2026-01-10', ADD_MONTHS(DATE '2026-01-10', 6));
+
+INSERT INTO abonament (id_abonament, id_client, tip_abonament, data_creare, data_expirare) VALUES (seq_abonament.NEXTVAL, 7, 'VIP', DATE '2025-11-20', ADD_MONTHS(DATE '2025-11-20', 6));
+
+INSERT INTO abonament (id_abonament, id_client, tip_abonament, data_creare, data_expirare) VALUES (seq_abonament.NEXTVAL, 8, 'VIP', DATE '2025-06-01', ADD_MONTHS(DATE '2025-06-01', 12));
+
+INSERT INTO abonament (id_abonament, id_client, tip_abonament, data_creare, data_expirare) VALUES (seq_abonament.NEXTVAL, 9, 'Premium', DATE '2025-08-15', ADD_MONTHS(DATE '2025-08-15', 12));
+
+INSERT INTO abonament (id_abonament, id_client, tip_abonament, data_creare, data_expirare) VALUES (seq_abonament.NEXTVAL, 10, 'Standard', SYSDATE, ADD_MONTHS(SYSDATE, 12));
+
+-- ============================ POPULARE TABEL ECHIPAMENT ============================
+-- === CATEGORIA: Sporturi de Iarna (Subcategorii: Schiuri=4, Snowboarduri=5, Clapari=6, Patinaj=7) ===
+-- === Furnizorii: Salomon Shop (5), Hervis (2), Intersport (3), Decathlon (1) ===
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Schiuri Salomon QST', 40.00, 4, 3, 5);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Schiuri Fischer RC4', 45.00, 4, 8, 3);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor)VALUES (seq_echipament.NEXTVAL, 'Schiuri Rossignol Hero', 35.00, 4, 2, 2);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Snowboard Burton Instigator', 35.00, 5, 3, 2);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Snowboard Salomon Sight', 38.00, 5, 8, 5);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Clapari Schi Rossignol', 15.00, 6, 3, 2);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Clapari Schi Head', 18.00, 6, 8, 3);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Patine Gheata Oxelo', 12.00, 7, 1, 1);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Patine Hochei Roces', 16.00, 7, 2, 4);
+
+
+-- === CATEGORIA: Sporturi de Vara (Subcategorii: MTB=8, Trotinete=9, Tenis=10, Echipa=11) ===
+-- === Furnizorii: BikeXpert (6), Maros Bike (7), Decathlon (1), Sportisimo (4) ===
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Bicicleta MTB Rockrider', 25.00, 8, 1, 1);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Bicicleta Trek Marlin', 30.00, 8, 2, 6);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Bicicleta Cannondale Trail', 35.00, 8, 4, 7);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Trotineta Electrica Xiaomi', 20.00, 9, 1, 3);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Trotineta Electrica Razor', 22.00, 9, 6, 4);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Racheta Tenis Wilson Blade', 15.00, 10, 5, 3);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Racheta Tenis Babolat Pure', 14.00, 10, 7, 2);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Minge Fotbal Nike Strike', 5.00, 11, 1, 4);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Minge Baschet Spalding TF', 6.00, 11, 9, 3);
+
+
+-- === CATEGORIA: Echipament Protectie (Subcategorii: Casti=12, Ochelari=13, Genunchiere=14, Veste=15) ===
+-- === Furnizorii logici: Decathlon (1), Hervis (2), Sportisimo (4), Salomon (5) ===
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Casca Protectie Btwin', 6.00, 12, 1, 1);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Casca Protectie Alpina', 8.00, 12, 5, 2);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Casca Schi Salomon', 10.00, 12, 3, 5);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Ochelari Schi Wedze', 8.00, 13, 8, 1);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Ochelari Alergare Kalenji', 5.00, 13, 6, 1);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Ochelari Schi Smith', 12.00, 13, 3, 2);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Genunchiere Role Rollerblade', 5.00, 14, 1, 4);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Genunchiere MTB Fox', 9.00, 14, 4, 6);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Vesta Salvare Tribord 50N', 10.00, 15, 6, 1);
+
+INSERT INTO echipament (id_echipament, denumire, pret_zi, id_categorie, id_locatie, id_furnizor) VALUES (seq_echipament.NEXTVAL, 'Vesta Salvare Jobe', 14.00, 15, 10, 3);
+
+-- ============================ POPULARE TABEL INCHIRIERE ============================
+
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 1, 6, 6, NULL, DATE '2026-01-10', DATE '2026-01-12');
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 1, 7, 6, 2, DATE '2026-03-15', DATE '2026-03-17');
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 1, 8, NULL, NULL, DATE '2026-05-28', DATE '2026-06-02');
+
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 2, 9, 9, 2, DATE '2026-02-20', DATE '2026-02-22');
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 2, 10, 6, NULL, DATE '2026-04-05', DATE '2026-04-08');
+
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 3, 6, 7, NULL, DATE '2026-03-01', DATE '2026-03-05');
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 3, 7, NULL, 4, DATE '2026-05-29', DATE '2026-05-30');
+
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 4, 8, 8, 3, DATE '2026-04-18', DATE '2026-04-20');
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 4, 9, 10, NULL, DATE '2026-05-10', DATE '2026-05-12');
+
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 5, 10, 10, NULL, DATE '2026-01-15', DATE '2026-01-16');
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 5, 6, 7, 1, DATE '2026-05-01', DATE '2026-05-03');
+
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 6, 7, 7, 4, DATE '2026-02-14', DATE '2026-02-15');
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 6, 8, NULL, NULL, DATE '2026-05-30', DATE '2026-06-01');
+
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 7, 9, 8, NULL, DATE '2025-12-20', DATE '2025-12-24');
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 7, 10, 9, 2, DATE '2026-04-01', DATE '2026-04-03');
+
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 8, 6, 6, 3, DATE '2026-03-10', DATE '2026-03-12');
+
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 9, 7, 8, NULL, DATE '2026-02-28', DATE '2026-03-02');
+
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 10, 8, 9, NULL, DATE '2026-05-15', DATE '2026-05-18');
+
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 15, 9, 9, NULL, DATE '2026-04-25', DATE '2026-04-27');
+
+INSERT INTO inchiriere (id_inchiriere, id_client, id_angajat_preluare, id_angajat_returnare, id_reducere, data_inceput, data_final) VALUES (seq_inchiriere.NEXTVAL, 22, 10, NULL, 1, DATE '2026-05-31', DATE '2026-06-05')
+
+-- ============================ POPULARE TABEL DETALII ============================
+
+INSERT INTO detalii SELECT 1, 1, 6, pret_zi, 'bun' FROM echipament WHERE id_echipament = 1;
+INSERT INTO detalii SELECT 1, 6, 6, pret_zi, 'bun' FROM echipament WHERE id_echipament = 6;
+INSERT INTO detalii SELECT 1, 21, 6, pret_zi, 'nou' FROM echipament WHERE id_echipament = 21;
+
+INSERT INTO detalii SELECT 2, 4, 7, pret_zi, 'uzat' FROM echipament WHERE id_echipament = 4;
+INSERT INTO detalii SELECT 2, 7, 7, pret_zi, 'bun' FROM echipament WHERE id_echipament = 7;
+INSERT INTO detalii SELECT 2, 22, 7, pret_zi, 'bun' FROM echipament WHERE id_echipament = 22;
+
+INSERT INTO detalii SELECT 4, 10, 9, pret_zi, 'nou' FROM echipament WHERE id_echipament = 10;
+INSERT INTO detalii SELECT 4, 19, 9, pret_zi, 'bun' FROM echipament WHERE id_echipament = 19;
+
+INSERT INTO detalii SELECT 5, 30, 10, pret_zi, 'nou' FROM echipament WHERE id_echipament = 30;
+INSERT INTO detalii SELECT 5, 23, 10, pret_zi, 'bun' FROM echipament WHERE id_echipament = 23;
+
+INSERT INTO detalii SELECT 3, 2, 8, pret_zi, 'bun' FROM echipament WHERE id_echipament = 2;
+
+INSERT INTO detalii SELECT 6, 11, 6, pret_zi, 'bun' FROM echipament WHERE id_echipament = 11;
+
+INSERT INTO detalii SELECT 7, 13, 7, pret_zi, 'uzat' FROM echipament WHERE id_echipament = 13;
+
+INSERT INTO detalii SELECT 8, 15, 8, pret_zi, 'nou' FROM echipament WHERE id_echipament = 15;
+
+INSERT INTO detalii SELECT 9, 17, 9, pret_zi, 'bun' FROM echipament WHERE id_echipament = 17;
+
+INSERT INTO detalii SELECT 10, 8, 10, pret_zi, 'bun' FROM echipament WHERE id_echipament = 8;
+
+INSERT INTO detalii SELECT 11, 12, 6, pret_zi, 'nou' FROM echipament WHERE id_echipament = 12;
+
+INSERT INTO detalii SELECT 12, 14, 7, pret_zi, 'bun' FROM echipament WHERE id_echipament = 14;
+
+INSERT INTO detalii SELECT 13, 16, 8, pret_zi, 'uzat' FROM echipament WHERE id_echipament = 16;
+
+INSERT INTO detalii SELECT 14, 18, 9, pret_zi, 'bun' FROM echipament WHERE id_echipament = 18;
+
+INSERT INTO detalii SELECT 15, 20, 10, pret_zi, 'bun' FROM echipament WHERE id_echipament = 20;
+
+INSERT INTO detalii SELECT 16, 24, 6, pret_zi, 'nou' FROM echipament WHERE id_echipament = 24;
+
+INSERT INTO detalii SELECT 17, 26, 7, pret_zi, 'bun' FROM echipament WHERE id_echipament = 26;
+
+INSERT INTO detalii SELECT 18, 28, 8, pret_zi, 'bun' FROM echipament WHERE id_echipament = 28;
+
+INSERT INTO detalii SELECT 19, 29, 9, pret_zi, 'nou' FROM echipament WHERE id_echipament = 29;
+
+INSERT INTO detalii SELECT 20, 5, 10, pret_zi, 'bun' FROM echipament WHERE id_echipament = 5;
+
+-- ============================ POPULARE TABEL PlATA ============================
+-- ============================ PLATI MULTIPLE ============================
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 1, 50.00, DATE '2026-01-10');
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 1, 80.00, DATE '2026-01-12');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 2, 60.00, DATE '2026-03-15');
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 2, 62.00, DATE '2026-03-17');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 4, 30.00, DATE '2026-02-20');
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 4, 32.00, DATE '2026-02-22');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 5, 20.00, DATE '2026-04-05');
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 5, 37.00, DATE '2026-04-08');
+
+-- ============================ PLATI NEPLATITE COMPLET (NERETURAT) ============================
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 3, 100.00, DATE '2026-05-28');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 7, 10.00, DATE '2026-05-29');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 13, 40.00, DATE '2026-05-30');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 20, 90.00, DATE '2026-05-31');
+
+-- ============================ PLATI INTEGRALE ============================
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 6, 120.00, DATE '2026-03-01');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 8, 30.00, DATE '2026-04-18');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 9, 10.00, DATE '2026-05-10');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 10, 12.00, DATE '2026-01-15');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 11, 70.00, DATE '2026-05-01');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 12, 22.00, DATE '2026-02-14');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 14, 40.00, DATE '2025-12-20');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 15, 28.00, DATE '2026-04-01');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 16, 24.00, DATE '2026-03-10');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 17, 15.00, DATE '2026-02-28');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 18, 30.00, DATE '2026-05-15');
+
+INSERT INTO plata (id_plata, id_inchiriere, suma_plata, data_plata) VALUES (seq_plata.NEXTVAL, 19, 28.00, DATE '2026-04-25');
+
+-- ============================ POPULARE TABEL FISA_TEHNICA ============================
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (1, DATE '2026-01-15', 'Uzura canturi medie. Necesita ceruire.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (2, DATE '2026-03-15', 'Zgarieturi minore pe talpa. Structura intacta.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (3, DATE '2026-05-10', 'Stare foarte buna. Verificat recent.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (4, DATE '2026-03-20', 'Uzura vizibila pe suprafata superioara.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (5, DATE '2026-05-25', 'Stare perfecta. Utilizat o singura data.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (6, DATE '2026-01-13', 'Clape verificate. Interior curatat si dezinfectat.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (7, DATE '2026-03-18', 'Uzura normala la sistemul de prindere.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (8, DATE '2026-01-20', 'Lame ascutite recent. Sireturi schimbate.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (9, DATE '2026-04-10', 'Stare noua. Fara defecte.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (10, DATE '2026-02-25', 'Placute frana schimbate. Lant gresat.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (11, DATE '2026-03-10', 'Uzura minora anvelopa spate. Schimbatoare reglate.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (12, DATE '2026-05-05', 'Furca fata verificata. Presiune optima.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (13, DATE '2026-05-15', 'Acumulator testat. Prezinta mici zgarieturi.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (14, DATE '2026-02-16', 'Ghidon strans. Mecanism pliere functional.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (15, DATE '2026-04-21', 'Racordaj original in stare excelenta. Grip nou.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (16, DATE '2026-04-30', 'Racordaj verificat dupa 2 inchirieri succesive.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (17, DATE '2026-05-12', 'Presiune minge corectata. Suprafata curata.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (18, DATE '2026-05-19', 'Uzura minora a cusaturilor. Perfect functionala.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (19, DATE '2026-02-23', 'Sistem reglaj spate functional. Fara fisuri.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (20, DATE '2026-05-20', 'Interior spalat. Carcasa in stare excelenta.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (21, DATE '2026-01-13', 'Viziera/Prindere intacta. Fara urme de impact.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (22, DATE '2026-03-18', 'Lentile curatate. Banda elastica fara intindere.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (23, DATE '2026-04-09', 'Lentile heliomate zgariate usor pe exterior.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (24, DATE '2026-03-12', 'Stare impecabila. Rama flexibila curatata.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (25, DATE '2026-03-02', 'Prinderi arici (velcro) in stare buna.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (26, DATE '2026-05-28', 'Uzura normala. Plastic protectie zgariat.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (27, DATE '2025-12-25', 'Chingi si catarame testate sub presiune.');
+
+INSERT INTO fisa_tehnica (id_echipament, ultima_verificare, detalii_uzura) VALUES (28, DATE '2026-05-18', 'Material plutitor verificat. Stare impecabila.');
